@@ -1,0 +1,22 @@
+# Backend
+backend/.env
+backend/venv/
+backend/__pycache__/
+backend/**/*.pyc
+
+# Frontend
+sahara-frontend/node_modules/
+sahara-frontend/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS / IDE
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
