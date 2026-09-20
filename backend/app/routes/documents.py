@@ -1,9 +1,11 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
-from app.services.ocr_service import OCRService
-from app.services.graph_service import global_graph_service
+from fastapi import APIRouter, UploadFile, File, Form
+from fastapi.responses import JSONResponse
+
+import hashlib
+
 
 router = APIRouter()
-ocr_service = OCRService()
+
 
 @router.post("/upload-and-link")
 async def upload_document_and_link_graph(
@@ -11,32 +13,47 @@ async def upload_document_and_link_graph(
     owner: str = Form(...),
     dependent: str = Form(...)
 ):
-    try:
-        file_bytes = await file.read()
-        extracted_data = ocr_service.process_image_bytes(file_bytes)
-        
-        policy_label = extracted_data.get("policy_number") or f"Doc_{file.filename}"
+    # Read raw uploaded bytes
+    data = await file.read()
 
-        global_graph_service.add_dependency(
-            owner=owner,
-            responsibility=policy_label,
-            dependent=dependent
-        )
+    # Basic information
+    size = len(data)
+    first_bytes = data[:32]
+    hex_bytes = data[:32].hex()
 
-        spofs = global_graph_service.detect_single_points_of_failure()
+    # PNG signature check
+    is_png = data.startswith(b"\x89PNG\r\n\x1a\n")
 
-        return {
-            "status": "success",
-            "ocr_result": extracted_data,
-            "graph_link": {
-                "owner": owner,
-                "responsibility": policy_label,
-                "dependent": dependent
-            },
-            "updated_spofs": spofs
+    # JPEG signature check
+    is_jpeg = (
+        data.startswith(b"\xff\xd8\xff")
+    )
+
+    # WEBP signature check
+    is_webp = (
+        len(data) >= 12
+        and data[:4] == b"RIFF"
+        and data[8:12] == b"WEBP"
+    )
+
+    return JSONResponse(
+        content={
+            "filename": file.filename,
+            "content_type": file.content_type,
+
+            "size": size,
+
+            "first_bytes_repr": repr(first_bytes),
+
+            "first_bytes_hex": hex_bytes,
+
+            "is_png": is_png,
+            "is_jpeg": is_jpeg,
+            "is_webp": is_webp,
+
+            "sha256": hashlib.sha256(data).hexdigest(),
+
+            "owner": owner,
+            "dependent": dependent
         }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Pipeline processing failed: {str(e)}"
-        )
+    )

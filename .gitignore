@@ -13,6 +13,9 @@ sahara-frontend/dist/
 .env.*
 !.env.example
 
+# Graph data
+backend/app/services/graph_data.json
+
 # OS / IDE
 .vscode/
 .idea/
