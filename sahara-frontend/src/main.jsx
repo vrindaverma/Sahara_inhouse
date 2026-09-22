@@ -80,8 +80,11 @@ function App(){
  const[authenticated,setAuthenticated]=useState(()=>!!getStoredToken());
  const[user,setUser]=useState(()=>getStoredUser());
  const[authScreen,setAuthScreen]=useState('login');
- const[page,setPage=useState('dashboard'),[mobile,setMobile]=useState(false),
- [health,setHealth]=useState(null),[graph,setGraph]=useState(null),[spof,setSpof]=useState([]);
+ const [page,setPage]=useState('dashboard');
+ const [mobile,setMobile]=useState(false);
+ const [health,setHealth]=useState(null);
+ const [graph,setGraph]=useState(null);
+ const [spof,setSpof]=useState([]);
 
  const load=async()=>{
   try{
