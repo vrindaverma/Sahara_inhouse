@@ -2,7 +2,7 @@ import React,{useEffect,useMemo,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{ReactFlow,Background,Controls,MiniMap,Handle,Position,useNodesState,useEdgesState,MarkerType}from'@xyflow/react';
 import'@xyflow/react/dist/style.css';
-import{Shield,LayoutDashboard,Network,FileText,AlertTriangle,Users,UploadCloud,Search,RefreshCw,CheckCircle2,Clock3,ArrowUpRight,LockKeyhole,Activity,ChevronRight,Menu,X,Link2,ScanText,UserRound,KeyRound}from'lucide-react';
+import{Shield,LayoutDashboard,Network,FileText,AlertTriangle,Users,UploadCloud,Search,RefreshCw,CheckCircle2,Clock3,ArrowUpRight,LockKeyhole,Activity,ChevronRight,Menu,X,Link2,ScanText,UserRound,KeyRound,Eye,EyeOff,Mail,ArrowRight,Fingerprint,LogOut}from'lucide-react';
 import'./styles.css';
 
 const API=import.meta.env.VITE_API_URL||'http://127.0.0.1:8000';
@@ -13,8 +13,74 @@ const nav=[
  ['emergency','Emergency Capsule',AlertTriangle]
 ];
 
+function Login({onLogin,onCreate}){
+ const[email,setEmail]=useState(''),[password,setPassword]=useState('');
+ const[showPassword,setShowPassword]=useState(false),[remember,setRemember]=useState(false);
+ const[loading,setLoading]=useState(false),[error,setError]=useState('');
+ const submit=async e=>{
+  e.preventDefault();setError('');
+  if(!email.trim()||!password.trim()){setError('Please enter your email and password.');return}
+  setLoading(true);
+  try{
+   const r=await fetch(API+'/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.trim(),password})});
+   const d=await r.json();if(!r.ok)throw new Error(d.detail||'Unable to sign in.');
+   localStorage.removeItem('sahara_token');localStorage.removeItem('sahara_user');sessionStorage.removeItem('sahara_token');sessionStorage.removeItem('sahara_user');
+   const store=remember?localStorage:sessionStorage;store.setItem('sahara_token',d.access_token);store.setItem('sahara_user',JSON.stringify(d.user));onLogin(d.user);
+  }catch(e){setError(e.message)}finally{setLoading(false)}
+ };
+ return <div className="loginPage"><section className="loginStory">
+  <div className="loginBrand"><div className="loginBrandIcon"><Shield size={25}/></div><div><b>SAHARA</b><span>Family Emergency & Digital Life Continuity</span></div></div>
+  <div className="loginHero"><span className="loginEyebrow">FAMILY CONTINUITY · SECURED</span><h1>Your family's continuity,<br/><em>secured.</em></h1><p>Organize what matters. Prepare for the unexpected. Ensure the right people have access when they need it.</p>
+   <div className="loginNetwork"><div className="networkRing ringOne"/><div className="networkRing ringTwo"/><div className="networkCenter"><Shield size={28}/><span>SAHARA</span></div><div className="networkPoint np1"><Users size={15}/><span>Family</span></div><div className="networkPoint np2"><FileText size={15}/><span>Documents</span></div><div className="networkPoint np3"><Network size={15}/><span>Responsibilities</span></div><div className="networkPoint np4"><KeyRound size={15}/><span>Trustees</span></div></div>
+  </div><div className="loginSecurity"><div><LockKeyhole size={15}/><span>Encrypted</span></div><div><CheckCircle2 size={15}/><span>Consent-based access</span></div><div><Users size={15}/><span>Multi-trustee protection</span></div></div>
+ </section><section className="loginSide"><div className="loginCard">
+  <div className="loginCardIcon"><LockKeyhole size={20}/></div><span className="loginSmall">SECURE ACCESS</span><h2>Welcome back</h2><p className="loginSubtitle">Sign in to your protected family workspace.</p>
+  <form onSubmit={submit}><label className="loginLabel">Email address<div className="loginInput"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email"/></div></label>
+   <label className="loginLabel">Password<div className="loginInput"><LockKeyhole size={17}/><input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password" autoComplete="current-password"/><button type="button" className="passwordToggle" onClick={()=>setShowPassword(x=>!x)}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>
+   <div className="loginOptions"><label className="remember"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/><span>Remember me</span></label><button type="button" className="forgot" onClick={()=>setError('Password recovery will be added later.')}>Forgot password?</button></div>
+   {error&&<div className="loginError"><AlertTriangle size={15}/>{error}</div>}<button className="loginButton" disabled={loading}>{loading?<><RefreshCw size={17} className="spin"/>Signing in...</>:<>Sign in securely<ArrowRight size={17}/></>}</button>
+  </form><div className="loginDivider"><span>OR CONTINUE WITH</span></div><button className="passkeyButton" type="button" onClick={()=>setError('Passkey / biometric sign-in is optional and will be enabled later.')}><Fingerprint size={19}/>Use passkey / biometric</button>
+  <p className="createAccount">New to SAHARA? <button type="button" onClick={onCreate}>Create your family space</button></p><div className="loginTrust"><Shield size={14}/>Protected by SAHARA's continuity security layer</div>
+ </div></section></div>
+}
+
+function Register({onBack,onRegistered}){
+ const[name,setName]=useState(''),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState('');
+ const[showPassword,setShowPassword]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
+ const submit=async e=>{
+  e.preventDefault();setError('');setSuccess('');
+  if(!name.trim()||!email.trim()||!password||!confirm){setError('Please complete all fields.');return}
+  if(password.length<8){setError('Password must contain at least 8 characters.');return}
+  if(password!==confirm){setError('Passwords do not match.');return}
+  setLoading(true);
+  try{
+   const r=await fetch(API+'/api/v1/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name.trim(),email:email.trim(),password})});
+   const d=await r.json();if(!r.ok)throw new Error(d.detail||'Unable to create account.');setSuccess('Account created successfully. You can now sign in.');setTimeout(onRegistered,700);
+  }catch(e){setError(e.message)}finally{setLoading(false)}
+ };
+ return <div className="loginPage"><section className="loginStory">
+  <div className="loginBrand"><div className="loginBrandIcon"><Shield size={25}/></div><div><b>SAHARA</b><span>Family Emergency & Digital Life Continuity</span></div></div>
+  <div className="loginHero"><span className="loginEyebrow">START YOUR CONTINUITY PLAN</span><h1>Prepare today.<br/><em>Protect tomorrow.</em></h1><p>Create your protected family workspace to organize responsibilities, important documents and trusted people in one secure place.</p></div>
+  <div className="loginSecurity"><div><LockKeyhole size={15}/><span>Encrypted</span></div><div><CheckCircle2 size={15}/><span>Consent-based access</span></div><div><Users size={15}/><span>Multi-trustee protection</span></div></div>
+ </section><section className="loginSide"><div className="loginCard">
+  <div className="loginCardIcon"><Users size={20}/></div><span className="loginSmall">CREATE WORKSPACE</span><h2>Create your account</h2><p className="loginSubtitle">Begin building your family's continuity plan.</p>
+  <form onSubmit={submit}><label className="loginLabel">Full name<div className="loginInput"><UserRound size={17}/><input value={name} onChange={e=>setName(e.target.value)} placeholder="Your full name" autoComplete="name"/></div></label>
+   <label className="loginLabel">Email address<div className="loginInput"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email"/></div></label>
+   <label className="loginLabel">Password<div className="loginInput"><LockKeyhole size={17}/><input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimum 8 characters" autoComplete="new-password"/><button type="button" className="passwordToggle" onClick={()=>setShowPassword(x=>!x)}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>
+   <label className="loginLabel">Confirm password<div className="loginInput"><LockKeyhole size={17}/><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Enter password again" autoComplete="new-password"/></div></label>
+   {error&&<div className="loginError"><AlertTriangle size={15}/>{error}</div>}{success&&<div className="result success"><CheckCircle2 size={16}/><span>{success}</span></div>}
+   <button className="loginButton" disabled={loading}>{loading?<><RefreshCw size={17} className="spin"/>Creating workspace...</>:<>Create family space<ArrowRight size={17}/></>}</button>
+  </form><p className="createAccount">Already have an account? <button type="button" onClick={onBack}>Sign in</button></p>
+ </div></section></div>
+}
+
 function App(){
- const[page,setPage]=useState('dashboard'),[mobile,setMobile]=useState(false),
+ const getStoredToken=()=>localStorage.getItem('sahara_token')||sessionStorage.getItem('sahara_token');
+ const getStoredUser=()=>{try{const raw=localStorage.getItem('sahara_user')||sessionStorage.getItem('sahara_user');return raw?JSON.parse(raw):null}catch{return null}};
+ const[authenticated,setAuthenticated]=useState(()=>!!getStoredToken());
+ const[user,setUser]=useState(()=>getStoredUser());
+ const[authScreen,setAuthScreen]=useState('login');
+ const[page,setPage=useState('dashboard'),[mobile,setMobile]=useState(false),
  [health,setHealth]=useState(null),[graph,setGraph]=useState(null),[spof,setSpof]=useState([]);
 
  const load=async()=>{
@@ -36,6 +102,16 @@ function App(){
  };
 
  useEffect(()=>{load()},[]);
+ if(!authenticated){
+  if(authScreen==='register')return <Register onBack={()=>setAuthScreen('login')} onRegistered={()=>setAuthScreen('login')}/>;
+  return <Login onLogin={loggedUser=>{setUser(loggedUser);setAuthenticated(true)}} onCreate={()=>setAuthScreen('register')}/>;
+ }
+ const initials=user?.full_name?.split(' ').filter(Boolean).map(x=>x[0]).slice(0,2).join('').toUpperCase()||'U';
+ const firstName=user?.full_name?.split(' ')[0]||'Family';
+ const logout=()=>{
+  localStorage.removeItem('sahara_token');localStorage.removeItem('sahara_user');sessionStorage.removeItem('sahara_token');sessionStorage.removeItem('sahara_user');
+  setUser(null);setAuthenticated(false);setAuthScreen('login');window.location.reload();
+ };
 
  const stats={
   nodes:graph?.nodes?.length||0,
@@ -55,8 +131,8 @@ function App(){
    <div className="workspace">
     <span className="eyebrow">WORKSPACE</span>
     <div className="family">
-     <div className="avatar">RK</div>
-     <div><strong>Rohan's Family</strong><small>Protected workspace</small></div>
+     <div className="avatar">{initials}</div>
+     <div><strong>{firstName}'s Family</strong><small>Protected workspace</small></div>
      <span className="liveDot"/>
     </div>
    </div>
@@ -75,10 +151,13 @@ function App(){
      <div><strong>Vault secured</strong><span>End-to-end protected</span></div>
     </div>
     <div className="user">
-     <div className="avatar small">PK</div>
-     <div><strong>Priyanshi</strong><span>Primary user</span></div>
+     <div className="avatar small">{initials}</div>
+     <div><strong>{user?.full_name||'User'}</strong><span>Primary user</span></div>
      <ChevronRight size={16}/>
     </div>
+    <button type="button" className="secondary full" style={{marginTop:'10px',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}} onClick={logout}>
+     <LogOut size={16}/> Sign out
+    </button>
    </div>
   </aside>
 
@@ -95,7 +174,7 @@ function App(){
       {health===null?'Connecting':health?'System online':'Backend offline'}
      </div>
      <button className="iconBtn"><Search size={18}/></button>
-     <button className="profile">PK</button>
+     <button className="profile" title={user?.full_name||'User'}>{initials}</button>
     </div>
    </header>
 
